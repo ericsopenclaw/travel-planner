@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Travel Planner — 度假大小事</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-deep: #0a1628;
+      --bg-card: #0f2040;
+      --bg-card2: #162d54;
+      --accent: #ff6b35;
+      --accent2: #ffd166;
+      --text: #e8d5b7;
+      --text-dim: #8a9bb5;
+      --border: #1e3a6a;
+      --radius: 16px;
+    }
+    html { scroll-behavior: smooth; }
+    body { background: var(--bg-deep); color: var(--text); font-family: 'Noto Sans TC', sans-serif; min-height: 100vh; }
+    a { color: var(--accent); text-decoration: none; }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 60px 20px 40px;
+      background: linear-gradient(135deg, #0a1628 0%, #1a3a6e 100%);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '✈️';
+      position: absolute;
+      font-size: 200px;
+      top: -30px;
+      right: -20px;
+      opacity: 0.06;
+    }
+    .hero h1 {
+      font-family: 'Playfair Display', serif;
+      font-size: 2.8rem;
+      background: linear-gradient(135deg, var(--accent2), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+    }
+    .hero p { color: var(--text-dim); font-size: 1rem; letter-spacing: 0.1em; }
+
+    /* Nav Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      padding: 20px 20px 0;
+      max-width: 960px;
+      margin: 0 auto;
+      overflow-x: auto;
+    }
+    .tab-btn {
+      padding: 10px 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-bottom: none;
+      border-radius: 12px 12px 0 0;
+      color: var(--text-dim);
+      cursor: pointer;
+      font-size: 0.85rem;
+      font-family: inherit;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+    .tab-btn.active { background: var(--bg-card2); color: var(--accent); border-color: var(--accent); }
+    .tab-btn:hover:not(.active) { color: var(--text); }
+
+    /* Main */
+    main { max-width: 960px; margin: 0 auto; padding: 20px; }
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    /* Cards */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-bottom: 16px;
+      color: var(--accent2);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Grid */
+    .dest-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }
+    .dest-card {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-align: center;
+    }
+    .dest-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .dest-card.selected { border-color: var(--accent); background: rgba(255,107,53,0.1); }
+    .dest-card .emoji { font-size: 2.4rem; margin-bottom: 8px; }
+    .dest-card .name { font-weight: 500; font-size: 0.95rem; }
+    .dest-card .country { font-size: 0.75rem; color: var(--text-dim); }
+    .dest-card .tag {
+      display: inline-block;
+      font-size: 0.65rem;
+      padding: 2px 8px;
+      border-radius: 20px;
+      background: rgba(255,107,53,0.15);
+      color: var(--accent);
+      margin-top: 6px;
+    }
+
+    /* Budget */
+    .budget-row {
+      display: grid;
+      grid-template-columns: 1fr 120px 100px;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .budget-row input {
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 8px 12px;
+      color: var(--text);
+      font-family: inherit;
+      width: 100%;
+    }
+    .budget-row input:focus { outline: none; border-color: var(--accent); }
+    .budget-row label { font-size: 0.85rem; }
+    .budget-total {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px;
+      background: rgba(255,209,102,0.1);
+      border: 1px solid var(--accent2);
+      border-radius: 12px;
+      font-size: 1.1rem;
+      font-weight: 500;
+      margin-top: 12px;
+    }
+    .budget-total .amount { color: var(--accent2); font-size: 1.4rem; }
+
+    /* Checklist */
+    .checklist-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .checklist-item input[type="checkbox"] {
+      width: 18px; height: 18px;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .checklist-item.checked label { text-decoration: line-through; color: var(--text-dim); }
+
+    /* Notes */
+    .notes textarea {
+      width: 100%;
+      background: var(--bg-deep);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+      resize: vertical;
+      min-height: 200px;
+    }
+    .notes textarea:focus { outline: none; border-color: var(--accent); }
+
+    /* Button */
+    .btn {
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--accent), #ff8c5a);
+      border: none;
+      border-radius: 30px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    .btn:hover { transform: scale(1.03); }
+    .btn-secondary {
+      background: var(--bg-card2);
+      border: 1px solid var(--border);
+    }
+
+    /* Trip Summary */
+    .trip-summary {
+      background: linear-gradient(135deg, rgba(255,107,53,0.1), rgba(255,209,102,0.1));
+      border: 1px solid var(--accent);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .trip-summary .dest-name { font-size: 1.5rem; font-weight: 700; color: var(--accent2); }
+    .trip-summary .details { color: var(--text-dim); margin-top: 4px; font-size: 0.85rem; }
+    .trip-summary .days-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 20px;
+      padding: 4px 16px;
+      font-size: 0.8rem;
+      margin-top: 10px;
+    }
+
+    /* Saved */
+    .saved-list { display: flex; flex-direction: column; gap: 8px; }
+    .saved-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-card2);
+      border-radius: 10px;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+    }
+    .saved-item button { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1rem; }
+    .saved-item button:hover { color: var(--accent); }
+
+    /* Responsive */
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 2rem; }
+      .budget-row { grid-template-columns: 1fr; gap: 4px; }
+      .budget-row label { font-size: 0.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="hero">
+  <h1>✈️ Travel Planner</h1>
+  <p>度假大小事，一站搞定</p>
+</header>
+
+<nav class="tabs">
+  <button class="tab-btn active" data-tab="dest">🏝️ 目的地</button>
+  <button class="tab-btn" data-tab="budget">💰 預算</button>
+  <button class="tab-btn" data-tab="checklist">🎒 打包</button>
+  <button class="tab-btn" data-tab="notes">📝 筆記</button>
+</nav>
+
+<main>
+
+  <!-- 目的地 -->
+  <section id="panel-dest" class="panel active">
+    <div class="trip-summary" id="tripSummary" style="display:none">
+      <div class="dest-name" id="selectedDestName">—</div>
+      <div class="details" id="selectedDestDetails">—</div>
+      <span class="days-badge" id="selectedDays">0 天</span>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🗺️ 選擇目的地</div>
+      <div class="dest-grid" id="destGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🎲 隨機目的地</div>
+      <p style="font-size:0.85rem; color:var(--text-dim); margin-bottom:12px">不知道去哪？讓命運幫你選！</p>
+      <button class="btn" onclick="pickRandomDest()">🌴 隨機挑一個</button>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📌 已儲存的目的地</div>
+      <div class="saved-list" id="savedDests">
+        <p style="color:var(--text-dim); font-size:0.85rem">還沒有儲存的目的地</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 預算 -->
+  <section id="panel-budget" class="panel">
+    <div class="card">
+      <div class="card-title">💸 旅遊預算計算機</div>
+      <div style="margin-bottom:12px">
+        <label style="font-size:0.8rem; color:var(--text-dim)">旅遊天數</label>
+        <input type="number" id="budgetDays" value="5" min="1" max="30" oninput="calcBudget()" style="width:80px; margin-left:10px; background:var(--bg-deep); border:1px solid var(--border); border-radius:8px; padding:6px 12px; color:var(--text); font-family:inherit">
+      </div>
+      <div id="budgetRows"></div>
+      <div class="budget-total">
+        <span>💰 總計</span>
+        <span class="amount" id="budgetTotal">NT$ 0</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 打包清單 -->
+  <section id="panel-checklist" class="panel">
+    <div class="card">
+      <div class="card-title">🎒 行李打包清單</div>
+      <div style="margin-bottom:12px; display:flex; gap:10px; flex-wrap:wrap">
+        <select id="tripType" onchange="generateChecklist()" style="background:var(--bg-deep); border:1px solid var(--border); border-radius:8px; padding:6px 12px; color:var(--text); font-family:inherit">
+          <option value="beach">🏖️ 海島度假</option>
+          <option value="city">🏙️ 都市購物</option>
+          <option value="mountain">🏔️ 山林健行</option>
+          <option value="mixed">🌍 綜合行程</option>
+        </select>
+        <select id="tripDaysChecklist" onchange="generateChecklist()" style="background:var(--bg-deep); border:1px solid var(--border); border-radius:8px; padding:6px 12px; color:var(--text); font-family:inherit">
+          <option value="3">3 天</option><option value="5" selected>5 天</option>
+          <option value="7">7 天</option><option value="10">10 天</option>
+          <option value="14">14 天</option>
+        </select>
+      </div>
+      <div id="checklistItems"></div>
+    </div>
+  </section>
+
+  <!-- 筆記 -->
+  <section id="panel-notes" class="panel">
+    <div class="card notes">
+      <div class="card-title">📝 旅行筆記</div>
+      <textarea id="travelNotes" placeholder="記下你的行程靈感、必吃美食、私房景點、推薦餐廳...任何東西！" oninput="saveNotes()"></textarea>
+      <p style="font-size:0.75rem; color:var(--text-dim); margin-top:8px; text-align:right">自動儲存 ✓</p>
+    </div>
+  </section>
+
+</main>
+
+<script>
+const destinations = [
+  { emoji: '🏝️', name: '沖繩', en: 'Okinawa', country: '日本', type: 'beach', cost: 4500, days: '4-6', tag: '海島' },
+  { emoji: '🗼', name: '東京', en: 'Tokyo', country: '日本', type: 'city', cost: 5500, days: '5-7', tag: '都市' },
+  { emoji: '🏔️', name: '瑞士阿爾卑斯', en: 'Swiss Alps', country: '瑞士', type: 'mountain', cost: 12000, days: '7-10', tag: '山林' },
+  { emoji: '🏖️', name: '普吉島', en: 'Phuket', country: '泰國', type: 'beach', cost: 3500, days: '4-5', tag: '海島' },
+  { emoji: '🗽', name: '紐約', en: 'New York', country: '美國', type: 'city', cost: 9000, days: '7-10', tag: '都市' },
+  { emoji: '🏰', name: '巴黎', en: 'Paris', country: '法國', type: 'city', cost: 8500, days: '5-7', tag: '都市' },
+  { emoji: '🌋', name: '巴里島', en: 'Bali', country: '印尼', type: 'beach', cost: 4000, days: '4-6', tag: '海島' },
+  { emoji: '�🦀', name: '帛琉', en: 'Palau', country: '帛琉', type: 'beach', cost: 8000, days: '4-5', tag: '海島' },
+  { emoji: '🌿', name: '瑞士少女峰', en: 'Jungfrau', country: '瑞士', type: 'mountain', cost: 11000, days: '6-8', tag: '山林' },
+  { emoji: '🏛️', name: '羅馬', en: 'Rome', country: '義大利', type: 'mixed', cost: 7000, days: '5-7', tag: '古蹟' },
+  { emoji: '🌸', name: '首爾', en: 'Seoul', country: '南韓', type: 'city', cost: 4000, days: '4-5', tag: '都市' },
+  { emoji: '🐘', name: '清邁', en: 'Chiang Mai', country: '泰國', type: 'mixed', cost: 2500, days: '4-5', tag: '綜合' },
+];
+
+const budgetItems = [
+  { label: '✈️ 機票', value: 0 },
+  { label: '🏨 住宿（每晚）', value: 0 },
+  { label: '🛤️ 簽證', value: 0 },
+  { label: '🛡️ 旅遊不便險', value: 0 },
+  { label: '🍽️ 餐飲（每天）', value: 0 },
+  { label: '🎫 門票/活動', value: 0 },
+  { label: '🚕 交通費', value: 0 },
+  { label: '🛍️ 購物預算', value: 0 },
+  { label: '📱 網卡/Wi-Fi', value: 0 },
+  { label: '💊 其他（藥品等）', value: 0 },
+];
+
+const checklistData = {
+  beach: {
+    essentials: ['護照', '機票電子機票', '信用卡/金融卡', '手機+旅平卡', '防曬乳 SPF50+', '太陽眼鏡', '帽子/陽傘', '沙灘拖鞋', '泳裝 × 2', '毛巾', '葯物（暈車葯）'],
+    clothes: ['輕薄短褲 × 3', '涼爽上衣 × 4', '薄外套（冷氣房/機場）', '內衣褲 × 5', '夾腳拖鞋'],
+    electronics: ['手機+耳機', '手機防水袋', '相機/GoPro', '各國轉接頭', '隨身行動電源'],
+    toiletries: ['洗髮精/沐浴露（小罐）', '牙膏牙刷', '防蚊液', '曬後修復蘆薈膠', '生理用品'],
+  },
+  city: {
+    essentials: ['護照', '機票', '信用卡', '隨身小背包', '雨傘/防潑水外套'],
+    clothes: ['舒適步行鞋', 'Smart Casual 服裝', '薄外套', '內衣褲 × 5', '睡衣'],
+    electronics: ['手機+耳機', '相機', '各國轉接頭', '行動電源', '萬用插座'],
+    toiletries: ['基礎保養組', '牙刷牙膏', '洗衣粉（小包）', '濕紙巾/酒精噴霧'],
+  },
+  mountain: {
+    essentials: ['護照', '機票', '登山背包（40L+）', '登山杖', '頭燈+備用電池', '個人葯物'],
+    clothes: ['排汗底層 × 2', '保暖中層（fleece/羽絨）', '防風防水外套', '登山褲 × 2', '羊毛襪 × 3', '手套', '毛帽', '涼鞋/營地鞋'],
+    electronics: ['手機+离线地圖下載', 'GPS 導航', '頭燈', '行動電源（大容量）', '太陽能充電板'],
+    toiletries: ['防蚊液', '個人清潔用品', '緊急毯', 'OK 繃/人工皮', '喉糖'],
+  },
+  mixed: {
+    essentials: ['護照', '機票', '信用卡', '手機+耳機', '萬用插座', '雨具'],
+    clothes: ['舒適走路鞋', 'Smart Casual 服裝', '保暖外套', '內衣褲 × 7', '睡衣'],
+    electronics: ['手機+耳機', '相機', '行動電源', '各國轉接頭'],
+    toiletries: ['基礎保養組', '牙刷牙膏', '防蚊液', '個人葯物'],
+  },
+};
+
+// State
+let selectedDest = null;
+let savedDests = JSON.parse(localStorage.getItem('savedDests') || '[]');
+let notes = localStorage.getItem('travelNotes') || '';
+
+// Tabs
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// Destinations
+function renderDests() {
+  const grid = document.getElementById('destGrid');
+  grid.innerHTML = destinations.map((d, i) => `
+    <div class="dest-card ${selectedDest === i ? 'selected' : ''}" onclick="selectDest(${i})">
+      <div class="emoji">${d.emoji}</div>
+      <div class="name">${d.name}</div>
+      <div class="country">${d.country}</div>
+      <span class="tag">${d.tag}</span>
+    </div>
+  `).join('');
+}
+
+function selectDest(i) {
+  selectedDest = i;
+  const d = destinations[i];
+  document.getElementById('tripSummary').style.display = 'block';
+  document.getElementById('selectedDestName').textContent = d.emoji + ' ' + d.name;
+  document.getElementById('selectedDestDetails').textContent = `${d.country} · 約 NT$ ${d.cost.toLocaleString()}/人/天 · 建議 ${d.days} 天`;
+  document.getElementById('selectedDays').textContent = `${d.days} 天`;
+  renderDests();
+  // Pre-fill budget
+  document.getElementById('budgetDays').value = parseInt(d.days.split('-')[0]) || 5;
+  calcBudget();
+}
+
+function pickRandomDest() {
+  const i = Math.floor(Math.random() * destinations.length);
+  selectDest(i);
+}
+
+function renderSavedDests() {
+  const el = document.getElementById('savedDests');
+  if (!savedDests.length) {
+    el.innerHTML = '<p style="color:var(--text-dim); font-size:0.85rem">還沒有儲存的目的地</p>';
+    return;
+  }
+  el.innerHTML = savedDests.map((d, i) => `
+    <div class="saved-item">
+      <span>${d.emoji} ${d.name} · ${d.country}</span>
+      <button onclick="removeSaved(${i})">✕</button>
+    </div>
+  `).join('');
+}
+
+function addToSaved() {
+  if (selectedDest === null) return;
+  const d = destinations[selectedDest];
+  if (!savedDests.find(x => x.name === d.name)) {
+    savedDests.push(d);
+    localStorage.setItem('savedDests', JSON.stringify(savedDests));
+    renderSavedDests();
+  }
+}
+
+// Budget
+function renderBudget() {
+  const container = document.getElementById('budgetRows');
+  container.innerHTML = budgetItems.map((item, i) => `
+    <div class="budget-row">
+      <label>${item.label}</label>
+      <input type="number" id="budget-${i}" value="${item.value}" min="0" placeholder="NT$" oninput="calcBudget()">
+    </div>
+  `).join('');
+}
+
+function calcBudget() {
+  const days = parseInt(document.getElementById('budgetDays').value) || 1;
+  // Per-night items: accommodation
+  const accomPerNight = parseFloat(document.getElementById('budget-1')?.value) || 0;
+  const mealsPerDay = parseFloat(document.getElementById('budget-4')?.value) || 0;
+
+  let total = 0;
+  budgetItems.forEach((item, i) => {
+    const val = parseFloat(document.getElementById('budget-' + i)?.value) || 0;
+    if (i === 1) total += val * days; // accommodation
+    else if (i === 4) total += val * days; // meals
+    else total += val;
+  });
+  document.getElementById('budgetTotal').textContent = 'NT$ ' + total.toLocaleString();
+}
+
+// Checklist
+function generateChecklist() {
+  const type = document.getElementById('tripType').value;
+  const days = parseInt(document.getElementById('tripDaysChecklist').value) || 5;
+  const data = checklistData[type];
+  const container = document.getElementById('checklistItems');
+
+  let html = '';
+  const sections = { '☂️ 衣物': data.clothes, '⚡ 電子產品': data.electronics, '🧴 盥洗/葯品': data.toiletries };
+  Object.entries(sections).forEach(([title, items]) => {
+    html += `<div style="margin-top:16px"><strong style="font-size:0.85rem; color:var(--accent2)">${title}</strong>`;
+    html += items.map(item => `
+      <div class="checklist-item">
+        <input type="checkbox" id="chk-${item}" onchange="toggleCheck(this)">
+        <label for="chk-${item}">${item}</label>
+      </div>
+    `).join('');
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+}
+
+function toggleCheck(el) {
+  el.closest('.checklist-item').classList.toggle('checked', el.checked);
+}
+
+// Notes
+function saveNotes() {
+  localStorage.setItem('travelNotes', document.getElementById('travelNotes').value);
+}
+
+// Init
+renderDests();
+renderSavedDests();
+renderBudget();
+generateChecklist();
+document.getElementById('travelNotes').value = notes;
+</script>
+
+</body>
+</html>
